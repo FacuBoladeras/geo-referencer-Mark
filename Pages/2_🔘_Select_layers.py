@@ -48,27 +48,43 @@ hide_table_row_index = """
 st.markdown(hide_table_row_index, unsafe_allow_html=True)
 
 st.cache_resource(max_entries=10, ttl=3600,)
+def extract_properties(gdf):
+    
+    def properties_to_dict(props):
+        return dict(props)
+
+    properties_df = gdf['properties'].apply(properties_to_dict).apply(pd.Series)
+
+    return properties_df
+
 def dxf_to_gdf(file):
     file_name = file.name
     bytes_data = file.getvalue()
     with MemoryFile(bytes_data) as memfile:
         with memfile.open() as src:
-            df1 = pd.DataFrame(src)
-            # Check Geometry
-            def isvalid(geom):
+            df1 = gpd.GeoDataFrame(src)
+            
+            
+            def is_valid(geom):
                 try:
-                    shape(geom)
-                    return 1
-                except:
-                    return 0
-            df1['isvalid'] = df1['geometry'].apply(
-                lambda x: isvalid(x))
-            df1 = df1[df1['isvalid'] == 1]
+                    geom_type = geom.geom_type
+                    return geom_type == 'Polygon' or geom_type == 'LineString' or geom_type == 'Point'
+                except AttributeError:
+                    return False
+
+            df1['isvalid'] = df1['geometry'].apply(lambda x: is_valid(x))
+            df1 = df1[df1['isvalid']]
+
+            gdf = gpd.GeoDataFrame.from_features(df1)
+            properties_df = extract_properties(gdf)
+
             
-            collection = json.loads(df1.to_json(orient='records'))
-            
-            gdf = gpd.GeoDataFrame.from_features(collection)
-            return gdf , file_name
+            gdf = pd.concat([gdf, properties_df], axis=1)            
+            gdf.drop(columns=['properties'], inplace=True)
+            print(gdf.head())
+            gdf.info()
+            gdf.head(2)
+            return gdf, file_name
 ##########################################################
 
 st.sidebar.title("🔘 Select Layers")
