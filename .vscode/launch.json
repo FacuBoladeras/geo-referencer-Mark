@@ -1,0 +1,16 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Streamlit",
+            "type": "python",
+            "request": "launch",
+            "program": "~/Escritorio/geo-referencer-Mark/app.py",
+            "args": ["run", "app"],
+            "console": "integratedTerminal",
+            "env": {
+                "STREAMLIT_SERVER_PORT": "8501" // Puerto en el que se ejecuta el servidor de Streamlit
+            }
+        }
+    ]
+}
