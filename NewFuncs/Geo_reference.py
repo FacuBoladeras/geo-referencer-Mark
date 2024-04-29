@@ -25,20 +25,9 @@ from geojson import FeatureCollection
 #########  Streamlit config  ##########
 
 def mainGeo():
+    
     st.set_option('deprecation.showPyplotGlobalUse', False)
-
-    with open('style.css') as f:
-        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
-
-    hide_table_row_index = """
-        <style>
-        thead tr th:first-child {display:none}
-        tbody th {display:none}
-        </style>
-        """
-    st.markdown(hide_table_row_index, unsafe_allow_html=True)
-
-    # declare state variables
+    st.cache_resource(max_entries=10, ttl=3600,)
 
     if 'fg' not in st.session_state:
         st.session_state['fg'] = folium.FeatureGroup(name="Markers",)

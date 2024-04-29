@@ -26,21 +26,7 @@ from FuncionCapas import select_and_visualize_layers
 
 #########  Streamlit config  ##########
 def mainFiles():
-
     st.set_option('deprecation.showPyplotGlobalUse', False)
-
-    with open('style.css') as f:
-        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
-
-    hide_table_row_index = """
-        <style>
-        thead tr th:first-child {display:none}
-        tbody th {display:none}
-        </style>
-        """
-    st.markdown(hide_table_row_index, unsafe_allow_html=True)
-
-
     st.cache_resource(max_entries=10, ttl=3600,)
 
     def extract_properties(gdf):
@@ -80,6 +66,45 @@ def mainFiles():
                 gdf.info()
                 gdf.head(2)
                 return gdf, file_name
+    
+    def process_properties(gdf_pol, gdf, file_name):
+        # Seleccionar capa para obtener propiedades
+            gdf_points = gdf[gdf['Layer'] == '71-spaces_data']
+            if gdf_points.empty:
+                gdf_points = gdf[gdf['Layer'] == '003-Room_number_text']
+                list_index = 0
+            else:
+                list_index = 1
+
+            text_prop = []
+            gdf_inter = None
+            for i, item in gdf_pol.iterrows():
+                gdf_inter = gdf_points.overlay(gdf_pol.loc[[i]], how='intersection')
+                prop = gdf_inter['Text'].to_list()
+                text_prop.append(prop)
+
+            gdf_pol['prop'] = text_prop
+            featcoll = gdf_pol.__geo_interface__
+
+            type_prop = "area.space"
+            custom_prop = "[object Object]"
+            for i, feat in enumerate(featcoll['features']):
+                spaceid = feat['properties']['prop'][list_index]
+                feat['id'] = spaceid
+                feat['properties'] = {
+                    "Layer": "70-spaces",
+                    "type": type_prop,
+                    "custom": custom_prop,
+                    "PaperSpace": None,
+                    "SubClasses": "AcDbEntity:AcDbPolyline",
+                    "Linetype": "Continuous",
+                    "EntityHandle": "2A546",
+                    "Text": None,
+                    "name": "Space"
+                }
+
+            geojson = json.dumps(featcoll)
+            return geojson, file_name[0:-4] + '.geojson'
 
 
     # declare state variables
@@ -96,67 +121,49 @@ def mainFiles():
             with st.spinner(f'Loading file {i+1}/{len(uploaded_files)} ...'):
                 gdf, file_name = dxf_to_gdf(file)
 
-                # Intenta seleccionar la capa '70-spaces' por defecto
+                # Intenta seleccionar la capa '70-spaces'
                 gdf_spaces = gdf[gdf['Layer'] == '70-spaces']
 
-                if gdf_spaces.empty:
-                    # Si '70-spaces' no está presente, llama a la función para seleccionar otra capa
-                    st.warning("Layer '70-spaces' not found. Please select another layer.")
-                    gdf_spaces = select_and_visualize_layers(gdf)
-                else:
+                if not gdf_spaces.empty:
+                    # Procesamiento adicional del gdf_spaces según tu necesidad
+                    gdf_pol = gpd.GeoSeries(polygonize(gdf_spaces.geometry))
+                    gdf_pol = gpd.GeoDataFrame(gdf_pol, columns=['geometry'])
+
+                    # Visualizar el resultado en un gráfico
+                    fig, ax = plt.subplots()
+                    ax = gdf_pol.plot(ax=ax, color='blue', alpha=0.5, edgecolor='k', linewidth=0.5)
+                    plt.axis('off')
+                    st.pyplot()
+
+                    # Mostrar mensaje de éxito si la capa '70-spaces' se encontró y procesó
                     st.success("Layer '70-spaces' found.")
 
-                # Procesamiento adicional del gdf_spaces según tu necesidad
-                gdf_pol = gpd.GeoSeries(polygonize(gdf_spaces.geometry))
-                gdf_pol = gpd.GeoDataFrame(gdf_pol, columns=['geometry'])
-
-                # Visualizar el resultado en un gráfico
-                fig, ax = plt.subplots()
-                ax = gdf_pol.plot(ax=ax, color='blue', alpha=0.5, edgecolor='k', linewidth=0.5)
-                plt.axis('off')
-                st.pyplot()
-
-                ######  Get properties  ######
-
-                # '003-Room_number_text','72-spaces_usage'
-                gdf_points = gdf[gdf['Layer'] == '71-spaces_data']
-                if gdf_points.empty:
-                    gdf_points = gdf[gdf['Layer']
-                                    == '003-Room_number_text']
-                    list_index = 0
                 else:
-                    list_index = 1
+                    # Si '70-spaces' no está presente, manejar la lógica alternativa
+                    st.warning("Layer '70-spaces' not found. Selecting another layer...")
 
-                text_prop = []
-                gdf_inter = None
-                for i, item in gdf_pol.iterrows():
-                    gdf_inter = gdf_points.overlay(
-                        gdf_pol.loc[[i]], how='intersection')
-                    prop = gdf_inter['Text'].to_list()
-                    text_prop.append(prop)
+                    # Llama a la función para seleccionar otra capa
+                    gdf_spaces = select_and_visualize_layers(gdf)
 
-                gdf_pol['prop'] = text_prop
-                featcoll = gdf_pol.__geo_interface__
+                    # Procesamiento adicional del gdf_spaces según tu necesidad
+                    gdf_pol = gpd.GeoSeries(polygonize(gdf_spaces.geometry))
+                    gdf_pol = gpd.GeoDataFrame(gdf_pol, columns=['geometry'])
 
-                type_prop = "area.space"
-                custom_prop = "[object Object]"
-                for i, feat in enumerate(featcoll['features']):
-                    spaceid = feat['properties']['prop'][list_index]
-                    feat['id'] = spaceid
-                    feat['properties'] = {
-                        "Layer": "70-spaces",
-                        "type": type_prop,
-                        "custom": custom_prop,
-                        "PaperSpace": None,
-                        "SubClasses": "AcDbEntity:AcDbPolyline",
-                        "Linetype": "Continuous",
-                        "EntityHandle": "2A546",
-                                        "Text": None,
-                                        "name": "Space"}
+                    # Visualizar el resultado en un gráfico
+                    fig, ax = plt.subplots()
+                    ax = gdf_pol.plot(ax=ax, color='blue', alpha=0.5, edgecolor='k', linewidth=0.5)
+                    plt.axis('off')
+                    st.pyplot()
 
-                geojson = json.dumps(featcoll)
-                st.download_button('Download GeoJson', geojson, mime='text/json',
-                                file_name=file_name[0:-4]+'.geojson', key=str(i))
+                # Procesar propiedades y generar GeoJSON
+                geojson, geojson_filename = process_properties(gdf_pol, gdf, file_name)
+
+                # Asignar un key único basado en el índice i para cada download_button
+                download_button_key = f"download_button_{i}"
+
+                # Agregar el botón de descarga con el key único
+                st.download_button('Download GeoJson', geojson, mime='text/json', file_name=geojson_filename, key=download_button_key)
+
                 
 if __name__ == "__main__":
     mainFiles()
