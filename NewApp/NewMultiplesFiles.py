@@ -25,6 +25,7 @@ from FuncionCapas import select_and_visualize_layers
 
 
 #########  Streamlit config  ##########
+
 def mainFiles():
     st.set_option('deprecation.showPyplotGlobalUse', False)
     st.cache_resource(max_entries=10, ttl=3600,)
@@ -66,6 +67,7 @@ def mainFiles():
                 gdf.info()
                 gdf.head(2)
                 return gdf, file_name
+            
     
     def process_properties(gdf_pol, gdf, file_name):
         # Seleccionar capa para obtener propiedades
@@ -113,54 +115,58 @@ def mainFiles():
     st.title("Conversion Tool")
 
     st.info("Upload multiple files at once")
+
     def process_uploaded_files(uploaded_files):
+
         if uploaded_files is not None:
             for i, file in enumerate(uploaded_files):
                 with st.spinner(f'Loading file {i+1}/{len(uploaded_files)} ...'):
-                    gdf, file_name = dxf_to_gdf(file)
+                    try:
+                        gdf, file_name = dxf_to_gdf(file)
 
-                    # Intenta seleccionar la capa '70-spaces'
-                    gdf_spaces = gdf[gdf['Layer'] == '70-spaces']
+                        # Intenta seleccionar la capa '70-spaces'
+                        gdf_spaces = gdf[gdf['Layer'] == '70-spaces']
 
-                    if not gdf_spaces.empty:
-                        # Procesamiento adicional del gdf_spaces según tu necesidad
-                        gdf_pol = gpd.GeoSeries(polygonize(gdf_spaces.geometry))
-                        gdf_pol = gpd.GeoDataFrame(gdf_pol, columns=['geometry'])
+                        if not gdf_spaces.empty:
+                            # Procesamiento adicional del gdf_spaces según tu necesidad
+                            gdf_pol = gpd.GeoSeries(polygonize(gdf_spaces.geometry))
+                            gdf_pol = gpd.GeoDataFrame(gdf_pol, columns=['geometry'])
 
-                        # Visualizar el resultado en un gráfico
-                        fig, ax = plt.subplots()
-                        ax = gdf_pol.plot(ax=ax, color='blue', alpha=0.5, edgecolor='k', linewidth=0.5)
-                        plt.axis('off')
-                        st.pyplot()
+                            # Visualizar el resultado en un gráfico
+                            fig, ax = plt.subplots()
+                            ax = gdf_pol.plot(ax=ax, color='blue', alpha=0.5, edgecolor='k', linewidth=0.5)
+                            plt.axis('off')
+                            st.pyplot()
 
-                        # Mostrar mensaje de éxito si la capa '70-spaces' se encontró y procesó
-                        st.success("Layer '70-spaces' found.")
+                        else:
+                            # Si '70-spaces' no está presente, manejar la lógica alternativa
+                            st.warning("Layer '70-spaces' not found. Selecting another layer...")
 
-                    else:
-                        # Si '70-spaces' no está presente, manejar la lógica alternativa
-                        st.warning("Layer '70-spaces' not found. Selecting another layer...")
+                            # Llama a la función para seleccionar otra capa
+                            gdf_spaces = select_and_visualize_layers(gdf)
 
-                        # Llama a la función para seleccionar otra capa
-                        gdf_spaces = select_and_visualize_layers(gdf)
+                            # Procesamiento adicional del gdf_spaces según tu necesidad
+                            gdf_pol = gpd.GeoSeries(polygonize(gdf_spaces.geometry))
+                            gdf_pol = gpd.GeoDataFrame(gdf_pol, columns=['geometry'])
 
-                        # Procesamiento adicional del gdf_spaces según tu necesidad
-                        gdf_pol = gpd.GeoSeries(polygonize(gdf_spaces.geometry))
-                        gdf_pol = gpd.GeoDataFrame(gdf_pol, columns=['geometry'])
+                            # Visualizar el resultado en un gráfico
+                            fig, ax = plt.subplots()
+                            ax = gdf_pol.plot(ax=ax, color='blue', alpha=0.5, edgecolor='k', linewidth=0.5)
+                            plt.axis('off')
+                            st.pyplot()
 
-                        # Visualizar el resultado en un gráfico
-                        fig, ax = plt.subplots()
-                        ax = gdf_pol.plot(ax=ax, color='blue', alpha=0.5, edgecolor='k', linewidth=0.5)
-                        plt.axis('off')
-                        st.pyplot()
+                        # Procesar propiedades y generar GeoJSON
+                        geojson, geojson_filename = process_properties(gdf_pol, gdf, file_name)
 
-                    # Procesar propiedades y generar GeoJSON
-                    geojson, geojson_filename = process_properties(gdf_pol, gdf, file_name)
+                        # Asignar un key único basado en el índice i para cada download_button
+                        download_button_key = f"download_button_{i}"
 
-                    # Asignar un key único basado en el índice i para cada download_button
-                    download_button_key = f"download_button_{i}"
+                        # Agregar el botón de descarga con el key único
+                        st.download_button('Download GeoJson', geojson, mime='text/json', file_name=geojson_filename, key=download_button_key)
+                    
+                    except IndexError as e:
+                        st.warning("There was an error trying to access the layer")
 
-                    # Agregar el botón de descarga con el key único
-                    st.download_button('Download GeoJson', geojson, mime='text/json', file_name=geojson_filename, key=download_button_key)
 
     # Uso de la función process_uploaded_files
     uploaded_files = st.file_uploader("Choose DXF files", accept_multiple_files=True, type="dxf", key="1")

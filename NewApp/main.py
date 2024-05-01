@@ -10,7 +10,7 @@ def main():
     selected = option_menu(
         menu_title=None,
         options=["ConvertGeojson", "Georeferencer"],
-        icons=["card-list", "car-front-fill"],
+        icons=["arrow-clockwise", "globe-europe-africa"],
         default_index=0,
         orientation="horizontal",
     )
