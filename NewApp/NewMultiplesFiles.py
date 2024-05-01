@@ -21,7 +21,7 @@ from streamlit_folium import st_folium ,folium_static
 from folium.plugins import Draw
 import numpy as np
 from geojson import FeatureCollection
-from FuncionCapas import select_and_visualize_layers
+from .FuncionCapas import select_and_visualize_layers
 
 
 #########  Streamlit config  ##########

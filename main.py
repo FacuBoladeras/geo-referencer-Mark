@@ -1,6 +1,6 @@
 from streamlit_option_menu import option_menu
-from Geo_reference import mainGeo
-from NewMultiplesFiles import mainFiles
+from NewApp.Geo_reference import mainGeo
+from NewApp.NewMultiplesFiles import mainFiles
 import streamlit as st
 
 def main():
