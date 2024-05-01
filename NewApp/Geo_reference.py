@@ -140,7 +140,7 @@ def mainGeo():
         click_disable = True
 
 
-    click = st.button('Accept', disabled=click_disable)
+    click = st.button('Accept', disabled=click_disable, type="primary")
 
     if click:
         st.session_state['down_button'] = True
@@ -216,16 +216,16 @@ def mainGeo():
 
         st.download_button(label=f'{filename[:-8]}_geo.geojson', data=geojson ,
                                     file_name=f'{filename[:-8]}_geo.geojson', mime='text/json',
-                                    disabled=disabled, key='download_button')
+                                    disabled=disabled, key='download_button', type="primary")
 
         if st.session_state['download_button']:
             None
 
     with col2:
 
-        if st.button(label='Reset Map', key='reset_button'):
+        if st.button(label='Reset Map', key='reset_button', type="primary"):
             st.session_state['feat'] = None
-            st.session_state['first_run'] = True
+            st.session_state['first_run'] = True,
             st.session_state['down_button'] = False
             st.session_state['show_uploaded_legend'] = False
             st.experimental_rerun()

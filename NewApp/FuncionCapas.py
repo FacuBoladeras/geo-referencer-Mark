@@ -13,7 +13,7 @@ def select_and_visualize_layers(gdf):
     layers = gdf['Layer'].unique()
     
     # Seleccionar una capa usando un widget de selección
-    selected_layer = st.selectbox('Selecting another layer', layers)
+    selected_layer = st.selectbox(' ', layers)
 
     # Filtrar el GeoDataFrame por la capa seleccionada
     filtered_gdf = gdf[gdf['Layer'] == selected_layer]

@@ -162,7 +162,7 @@ def mainFiles():
                         download_button_key = f"download_button_{i}"
 
                         # Agregar el botón de descarga con el key único
-                        st.download_button('Download GeoJson', geojson, mime='text/json', file_name=geojson_filename, key=download_button_key)
+                        st.download_button('Download GeoJson', geojson, mime='text/json', file_name=geojson_filename, key=download_button_key, type="primary")
                     
                     except IndexError as e:
                         st.warning("There was an error trying to access the layer")
