@@ -106,7 +106,7 @@ def mainFiles():
     if uploaded_files is not None:
         total_files = len(uploaded_files)
         for i, file in enumerate(uploaded_files):
-            #progress_bar = st.progress((i + 1) / total_files)
+            progress_bar = st.progress((i + 1) / total_files)
             try:
                 gdf, file_name = dxf_to_gdf(file)
 
@@ -134,7 +134,7 @@ def mainFiles():
                 st.warning("There was an error trying to access the layer")
             finally:
                 pass
-                #progress_bar.empty()  # Limpiar la barra de progreso después de completar cada archivo
+                progress_bar.empty()  # Limpiar la barra de progreso después de completar cada archivo
 
 if __name__ == "__main__":
     mainFiles()

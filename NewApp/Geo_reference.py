@@ -22,7 +22,6 @@ import numpy as np
 from geojson import FeatureCollection
 
 
-#########  Streamlit config  ##########
 
 def mainGeo():
     
@@ -230,9 +229,6 @@ def mainGeo():
             st.session_state['show_uploaded_legend'] = False
             st.experimental_rerun()
         
-
-
-
 
 if __name__ == "__main__":
     mainGeo()
