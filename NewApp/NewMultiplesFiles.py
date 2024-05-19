@@ -2,27 +2,25 @@ import warnings
 warnings.filterwarnings("ignore")
 import streamlit as st
 import json
-import fiona
-from shapely.geometry import shape
 import pandas as pd
 import geopandas as gpd
 from shapely.ops import polygonize
-from shapely.geometry import Point, Polygon, LineString, MultiPolygon
-from shapely.affinity import scale, rotate, translate
 import os
-from fiona.io import MemoryFile, ZipMemoryFile
-import io
-from io import BytesIO
+from fiona.io import MemoryFile
 import matplotlib.pyplot as plt
-from adjustText import adjust_text
-from PIL import Image
-import folium
-from streamlit_folium import st_folium ,folium_static
-from folium.plugins import Draw
-import numpy as np
-from geojson import FeatureCollection
 from .FuncionCapas import select_and_visualize_layers
 
+import cloudconvert
+import dotenv
+
+import tempfile
+temp_dir = tempfile.gettempdir()
+
+
+dotenv.load_dotenv()
+
+api_key = os.getenv('API_KEY')
+cloudconvert.configure(api_key=api_key, sandbox=False)
 
 def extract_properties(gdf):
     def properties_to_dict(props):
@@ -56,6 +54,78 @@ def dxf_to_gdf(file):
             gdf.drop(columns=['properties'], inplace=True)
             
             return gdf, file_name
+        
+@st.cache_data
+def dwg_to_gdf(file):
+
+    jobdef = {
+            "tasks": {
+                "import-1": {
+                    "operation": "import/upload"
+                },
+                "convert-1": {
+                    "operation": "convert",
+                    "input_format": "dwg",
+                    "output_format": "dxf",
+                    "engine": "cadconverter",
+                    "input": [
+                        "import-1"
+                    ],
+                    "filename": "output.dxf"
+                },
+                "export-1": {
+                    "operation": "export/url",
+                    "input": [
+                        "convert-1"
+                    ],
+                    "inline": False,
+                    "archive_multiple_files": False
+                }
+            },
+            "tag": "jobbuilder"
+        }
+    job = cloudconvert.Job.create(payload=jobdef)
+    # get upload task id
+    upload_task_id = job['tasks'][0]['id']
+    upload_task = cloudconvert.Task.find(id=upload_task_id)
+
+    file_name = file.name
+    bytes_data = file.getvalue()
+
+    # save dwg file in temp directory
+    path = os.path.join(temp_dir, 'temp.dwg')
+    with open(path, 'wb') as f:
+        f.write(bytes_data)
+
+    res = cloudconvert.Task.upload(path, task=upload_task)
+    exported_url_task_id = job['tasks'][2]['id']
+    res = cloudconvert.Task.wait(id=exported_url_task_id)  # Wait for job completion
+    file = res.get("result").get("files")[0]
+    path_out = os.path.join(temp_dir, file['filename'])
+    res = cloudconvert.download(filename=path_out, url=file['url'])
+    with open(path_out, 'rb') as f:
+        content = f.read()
+        with MemoryFile(content) as memfile:
+            with memfile.open() as src:
+                df1 = gpd.GeoDataFrame(src)
+                
+                def is_valid(geom):
+                    try:
+                        geom_type = geom.geom_type
+                        return geom_type in ['Polygon', 'LineString', 'Point']
+                    except AttributeError:
+                        return False
+                
+                df1['isvalid'] = df1['geometry'].apply(lambda x: is_valid(x))
+                df1 = df1[df1['isvalid']]
+                
+                gdf = gpd.GeoDataFrame.from_features(df1)
+                properties_df = extract_properties(gdf)
+                
+                gdf = pd.concat([gdf, properties_df], axis=1)            
+                gdf.drop(columns=['properties'], inplace=True)
+                
+                return gdf, file_name
 
 def process_properties(gdf_pol, gdf, file_name):
     gdf_points = gdf[gdf['Layer'] == '71-spaces_data']
@@ -101,14 +171,17 @@ def mainFiles():
     st.sidebar.info("Upload multiple files at once and convert them to GeoJSON")
     st.title("Conversion Tool")
 
-    uploaded_files = st.file_uploader("Choose DXF files", accept_multiple_files=True, type="dxf", key="1")
+    uploaded_files = st.file_uploader("Choose DWG or DXF files", accept_multiple_files=True, type=['dxf','dwg'], key="1")
 
     if uploaded_files is not None:
         total_files = len(uploaded_files)
         for i, file in enumerate(uploaded_files):
             progress_bar = st.progress((i + 1) / total_files)
             try:
-                gdf, file_name = dxf_to_gdf(file)
+                if file.name.endswith('.dxf') or file.name.endswith('.DXF'):
+                    gdf, file_name = dxf_to_gdf(file)
+                elif file.name.endswith('.dwg') or file.name.endswith('.DWG'):
+                    gdf, file_name = dwg_to_gdf(file)
 
                 gdf_spaces = gdf[gdf['Layer'] == '70-spaces']
                 if not gdf_spaces.empty:
