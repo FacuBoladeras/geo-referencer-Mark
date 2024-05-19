@@ -9,14 +9,13 @@ import os
 from fiona.io import MemoryFile
 import matplotlib.pyplot as plt
 from .FuncionCapas import select_and_visualize_layers
-
 import cloudconvert
 import dotenv
 
 import tempfile
 temp_dir = tempfile.gettempdir()
 
-
+# Load environment variables
 dotenv.load_dotenv()
 
 api_key = os.getenv('API_KEY')
@@ -57,7 +56,7 @@ def dxf_to_gdf(file):
         
 @st.cache_data
 def dwg_to_gdf(file):
-
+    # cloud convert job definition
     jobdef = {
             "tasks": {
                 "import-1": {
@@ -84,6 +83,7 @@ def dwg_to_gdf(file):
             },
             "tag": "jobbuilder"
         }
+    # create job
     job = cloudconvert.Job.create(payload=jobdef)
     # get upload task id
     upload_task_id = job['tasks'][0]['id']
@@ -96,19 +96,22 @@ def dwg_to_gdf(file):
     path = os.path.join(temp_dir, 'temp.dwg')
     with open(path, 'wb') as f:
         f.write(bytes_data)
-
+    # upload file to cloudconvert
     res = cloudconvert.Task.upload(path, task=upload_task)
+
+    # get the export task id
     exported_url_task_id = job['tasks'][2]['id']
     res = cloudconvert.Task.wait(id=exported_url_task_id)  # Wait for job completion
     file = res.get("result").get("files")[0]
     path_out = os.path.join(temp_dir, file['filename'])
+    # download the file to the temp directory
     res = cloudconvert.download(filename=path_out, url=file['url'])
+    # read the file
     with open(path_out, 'rb') as f:
         content = f.read()
         with MemoryFile(content) as memfile:
             with memfile.open() as src:
                 df1 = gpd.GeoDataFrame(src)
-                
                 def is_valid(geom):
                     try:
                         geom_type = geom.geom_type
