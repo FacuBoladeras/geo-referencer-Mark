@@ -15,6 +15,7 @@ import dotenv
 import tempfile
 temp_dir = tempfile.gettempdir()
 
+os.environ['OGR_GEOMETRY_ACCEPT_UNCLOSED_RING'] = 'NO'
 # Load environment variables
 dotenv.load_dotenv()
 
