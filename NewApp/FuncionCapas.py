@@ -8,15 +8,16 @@ import json
 
 
 
-def select_and_visualize_layers(gdf):
+def select_and_visualize_layers(gdf, key_suffix=""):
     # Obtener las capas únicas del GeoDataFrame
     layers = gdf['Layer'].unique()
     
     # Seleccionar una capa usando un widget de selección
-    selected_layer = st.selectbox(' ', layers)
+    selected_layer = st.selectbox('Select layer:', layers, key=f"selectbox_{key_suffix}")
 
     # Filtrar el GeoDataFrame por la capa seleccionada
     filtered_gdf = gdf[gdf['Layer'] == selected_layer]
 
     return filtered_gdf
+
 
