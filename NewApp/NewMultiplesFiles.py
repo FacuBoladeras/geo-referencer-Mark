@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from .FuncionCapas import select_and_visualize_layers
 import cloudconvert
 import dotenv
+import seaborn as sns
 
 import tempfile
 temp_dir = tempfile.gettempdir()
@@ -171,10 +172,16 @@ def process_properties(gdf_pol, gdf, file_name):
 def mainFiles():
     st.set_option('deprecation.showPyplotGlobalUse', False)
     st.sidebar.title("📂 Convert multiple files")
-    st.sidebar.info("Upload multiple files at once and convert them to GeoJSON")
-    st.title("Conversion Tool")
+    st.sidebar.markdown("**Upload multiple files at once and convert them to GeoJSON**")
+    st.markdown("### Conversion Tool")
+    info = """
+This tool allows you to upload multiple DWG/DFX files and then download them in GeoJSON format. 
+For those files that do not contain the geometries in the default layer, it is possible to select the corresponding layer before generating the conversion and download.
+"""
 
-    uploaded_files = st.file_uploader("Choose DWG or DXF files", accept_multiple_files=True, type=['dxf','dwg'], key="1")
+    st.sidebar.markdown(info)
+
+    uploaded_files = st.file_uploader("Choose DWG or DXF files", accept_multiple_files=True, type=['dxf', 'dwg'], key="1")
 
     if uploaded_files is not None:
         total_files = len(uploaded_files)
@@ -196,10 +203,14 @@ def mainFiles():
                     gdf_pol = gpd.GeoSeries(polygonize(gdf_spaces.geometry))
                     gdf_pol = gpd.GeoDataFrame(gdf_pol, columns=['geometry'])
 
+                sns.set(style="whitegrid")
                 fig, ax = plt.subplots()
-                ax = gdf_pol.plot(ax=ax, color='blue', alpha=0.5, edgecolor='k', linewidth=0.5)
+                fig.patch.set_facecolor('#EFC9AF')  # Set figure background color
+                ax.set_facecolor('#EFC9AF')  # Set axes background color
+
+                gdf_pol.plot(ax=ax, color='#1F8AC0', alpha=1.0, edgecolor='k', linewidth=0.5)
                 plt.axis('off')
-                st.pyplot()
+                st.pyplot(fig)
 
                 geojson, geojson_filename = process_properties(gdf_pol, gdf, file_name)
 
@@ -209,8 +220,7 @@ def mainFiles():
             except IndexError as e:
                 st.warning("There was an error trying to access the layer")
             finally:
-                pass
-                progress_bar.empty()  # Limpiar la barra de progreso después de completar cada archivo
+                progress_bar.empty()
 
 if __name__ == "__main__":
     mainFiles()

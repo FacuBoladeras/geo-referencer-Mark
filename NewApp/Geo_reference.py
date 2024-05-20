@@ -59,15 +59,17 @@ def mainGeo():
         st.session_state['show_uploaded_legend'] = True
 
     st.sidebar.title("🌍 Geo Reference Floor Plan")
-    info = """ 1.- Choose the GeoJSON file and Click on the UPLOAD button \n \\
-            2.- Draw a polygon on the map \n \\
-            3.- Click on the Accept button to bring the floorplan into the map \n \\
-            4.- Use the slider to adjust size, rotation and position \n \\
-            5.- Download the GeoJSON file with geographical coordinates \n
+    info = """
+    **1.- Choose the GeoJSON file and Click on the UPLOAD button** \n \\
+    **2.- Draw a polygon on the map** \n \\
+    **3.- Click on the Accept button to bring the floorplan into the map** \n \\
+    **4.- Use the slider to adjust size, rotation and position** \n \\
+    **5.- Download the GeoJSON file with geographical coordinates** \n
     """
-    st.sidebar.info(info)
+    st.sidebar.markdown(info)
 
     st.info("Allow to project the GeoJSON file to geographic coordinates.")
+
     # uploaded_file = st.file_uploader(
     #     "Choose a GeoJSON file", accept_multiple_files=False, type="geojson", key='upload_button')
 
