@@ -1,25 +1,13 @@
-import warnings
-warnings.filterwarnings("ignore")
-import streamlit as st
 import json
-import fiona
-from shapely.geometry import shape
-import pandas as pd
-import geopandas as gpd
-from shapely.ops import polygonize
-from shapely.geometry import Point, Polygon, LineString, MultiPolygon
-from shapely.affinity import scale, rotate, translate
-import os
-from fiona.io import MemoryFile, ZipMemoryFile
 import io
-import matplotlib.pyplot as plt
-from adjustText import adjust_text
-from PIL import Image
 import folium
-from streamlit_folium import st_folium ,folium_static
+import geopandas as gpd
+import streamlit as st
+from shapely.geometry import Polygon, Point
+from shapely.affinity import rotate, translate, scale
+from streamlit_folium import st_folium
 from folium.plugins import Draw
-import numpy as np
-from geojson import FeatureCollection
+import matplotlib.pyplot as plt
 
 @st.cache_data(max_entries=10, ttl=3600)
 def load_geojson_files(uploaded_files):
@@ -43,6 +31,7 @@ def initialize_session_state():
         'files_uploaded': False,
         'down_button': False,
         'feattodownload': {'type': 'FeatureCollection', 'features': []},
+        'feattodownloads': {},
         'file_names': [],
         'show_uploaded_legend': True,
     }
@@ -112,7 +101,8 @@ def handle_accept(st_data):
         centroid = poly.centroid
 
     feats = []
-    for gdf_plan in st.session_state['gdf_plans']:
+    feattodownloads = {}
+    for i, gdf_plan in enumerate(st.session_state['gdf_plans']):
         gdf_diss = gdf_plan.dissolve()
         poly_plan = gdf_diss.geometry.values[0].buffer(0.001)
         box = poly_plan.minimum_rotated_rectangle
@@ -131,21 +121,26 @@ def handle_accept(st_data):
         plan_feat = gdf_plan.__geo_interface__
         feats.append(plan_feat)
 
+        # Store each GeoJSON separately
+        filename = st.session_state['file_names'][i]
+        feattodownloads[filename] = json.dumps(plan_feat)
+
     st.session_state['feats'] = feats
+    st.session_state['feattodownloads'] = feattodownloads
+
     if st.session_state['first_run']:
         st.session_state['first_run'] = False
         st.experimental_rerun()
 
 def download_buttons():
-    filenames = st.session_state['file_names']
-    featcoll = st.session_state['feattodownload']
-    geojson = json.dumps(featcoll)
-
+    featcolls = st.session_state['feattodownloads']
+    
     col1, col2 = st.sidebar.columns(2)
     with col1:
-        st.download_button(label='merged_geo.geojson', data=geojson,
-                           file_name='merged_geo.geojson', mime='text/json',
-                           disabled=not st.session_state['down_button'], key='download_button', type="primary")
+        for i, (filename, geojson) in enumerate(featcolls.items()):
+            st.download_button(label=f'{filename}', data=geojson,
+                               file_name=f'{filename}', mime='text/json',
+                               disabled=not st.session_state['down_button'], key=f'download_button_{i}', type="primary")
 
     with col2:
         if st.button(label='Reset Map', key='reset_button', type="primary"):
