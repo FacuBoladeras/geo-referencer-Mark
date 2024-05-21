@@ -1,5 +1,6 @@
 from streamlit_option_menu import option_menu
-from NewApp.Geo_reference import mainGeo
+#from NewApp.Geo_reference import mainGeo
+from NewApp.NewGeoreferencer import mainGeo
 from NewApp.NewMultiplesFiles import mainFiles
 import streamlit as st
 
