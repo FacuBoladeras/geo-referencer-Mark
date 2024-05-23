@@ -21,7 +21,7 @@ def main():
 
     st.write("# Welcome! 👋🏾​​")
 
-    st.write("**This tool is designed to help you convert your floor plans into a format that can be used in your leaflet map.**")
+    st.write("**This tool is designed to help you convert your floor plans into GeoJSON.**")
 
     st.write("**To get started, select a tool from the bar.**")
 

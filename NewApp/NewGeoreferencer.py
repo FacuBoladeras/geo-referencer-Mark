@@ -130,7 +130,7 @@ def handle_accept(st_data):
 
     if st.session_state['first_run']:
         st.session_state['first_run'] = False
-        st.experimental_rerun()
+        st.rerun()
 
 def download_buttons():
     featcolls = st.session_state['feattodownloads']
@@ -148,7 +148,7 @@ def download_buttons():
             st.session_state['first_run'] = True
             st.session_state['down_button'] = False
             st.session_state['show_uploaded_legend'] = False
-            st.experimental_rerun()
+            st.rerun()
 
 def mainGeo():
     st.set_option('deprecation.showPyplotGlobalUse', False)

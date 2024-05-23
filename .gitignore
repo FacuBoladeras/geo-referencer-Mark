@@ -4,3 +4,5 @@ temp.dwg
 .env
 .DS_Store
 .venv
+*.pyc
+NewApp/__pycache__/FuncionCapas.cpython-310.pyc
