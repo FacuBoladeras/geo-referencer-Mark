@@ -3,7 +3,10 @@ from streamlit_option_menu import option_menu
 from NewApp.NewGeoreferencer import mainGeo
 from NewApp.NewMultiplesFiles import mainFiles
 import streamlit as st
+import os
 
+os.environ['OGR_GEOMETRY_ACCEPT_UNCLOSED_RING'] = 'YES'
+os.environ['DXF_FEATURE_LIMIT_PER_BLOCK'] = '-1'
 
 def main():
     st.set_page_config(layout="centered")  # Configurar el ancho y alto del lienzo
