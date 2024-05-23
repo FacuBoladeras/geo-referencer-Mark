@@ -139,9 +139,9 @@ def process_properties(gdf_pol, gdf, file_name):
 
     if gdf_points.empty:
         gdf_points = gdf[gdf['Layer'] == '003-Room_number_text']
-        # list_index = 0
-    # else:
-    #     list_index = 1
+    elif gdf_points.empty:
+        gdf_points = gdf[gdf['Layer'] == 'Text']
+
 
     text_prop = []
     for i, item in gdf_pol.iterrows():
@@ -159,7 +159,6 @@ def process_properties(gdf_pol, gdf, file_name):
             spaceid = feat['properties']['prop'][list_index]
         except:
             spaceid = None
-            print("No space id found")
         feat['id'] = spaceid
         feat['properties'] = {
             "Layer": "70-spaces",
