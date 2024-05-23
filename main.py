@@ -4,6 +4,7 @@ from NewApp.NewGeoreferencer import mainGeo
 from NewApp.NewMultiplesFiles import mainFiles
 import streamlit as st
 
+
 def main():
     st.set_page_config(layout="centered")  # Configurar el ancho y alto del lienzo
 

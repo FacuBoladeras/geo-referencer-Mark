@@ -43,7 +43,7 @@ def display_sidebar():
     st.sidebar.title("🌍 Geo Reference Floor Plan")
     info = """
     **1.- Choose the GeoJSON files and Click on the UPLOAD button** \n \\
-    **2.- Draw a polygon on the map** \n \\
+    **2.- Draw a polygon on the map; once generated, press cancel to keep only one polygon.** \n \\
     **3.- Click on the Accept button to bring the floorplans into the map** \n \\
     **4.- Use the slider to adjust size, rotation and position** \n \\
     **5.- Download the GeoJSON file with geographical coordinates** \n
