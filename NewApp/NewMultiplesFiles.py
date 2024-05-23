@@ -132,12 +132,16 @@ def dwg_to_gdf(file):
                 return gdf, file_name
 
 def process_properties(gdf_pol, gdf, file_name):
+    list_index = 0
     gdf_points = gdf[gdf['Layer'] == '71-spaces_data']
+    if not gdf_points.empty:
+        list_index = 1
+
     if gdf_points.empty:
         gdf_points = gdf[gdf['Layer'] == '003-Room_number_text']
-        list_index = 0
-    else:
-        list_index = 1
+        # list_index = 0
+    # else:
+    #     list_index = 1
 
     text_prop = []
     for i, item in gdf_pol.iterrows():
@@ -151,7 +155,11 @@ def process_properties(gdf_pol, gdf, file_name):
     type_prop = "area.space"
     custom_prop = "[object Object]"
     for i, feat in enumerate(featcoll['features']):
-        spaceid = feat['properties']['prop'][list_index]
+        try:
+            spaceid = feat['properties']['prop'][list_index]
+        except:
+            spaceid = None
+            print("No space id found")
         feat['id'] = spaceid
         feat['properties'] = {
             "Layer": "70-spaces",
@@ -203,7 +211,7 @@ For those files that do not contain the geometries in the default layer, it is p
                     gdf_pol = gpd.GeoSeries(polygonize(gdf_spaces.geometry))
                     gdf_pol = gpd.GeoDataFrame(gdf_pol, columns=['geometry'])
 
-                sns.set(style="whitegrid")
+                sns.set_theme(style="whitegrid")
                 fig, ax = plt.subplots()
                 fig.patch.set_facecolor('#EFC9AF')  # Set figure background color
                 ax.set_facecolor('#EFC9AF')  # Set axes background color
@@ -219,6 +227,7 @@ For those files that do not contain the geometries in the default layer, it is p
 
             except IndexError as e:
                 st.warning("There was an error trying to access the layer")
+                print(e)
             finally:
                 progress_bar.empty()
 
