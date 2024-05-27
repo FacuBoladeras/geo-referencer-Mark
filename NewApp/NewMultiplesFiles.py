@@ -207,7 +207,7 @@ For those files that do not contain the geometries in the default layer, it is p
                     gdf_pol = gpd.GeoSeries(polygonize(gdf_spaces.geometry))
                     gdf_pol = gpd.GeoDataFrame(gdf_pol, columns=['geometry'])
                 else:
-                    st.warning("Layer '70-spaces' not found. Selecting another layer...")
+                    st.warning("Select an area layer...")
                     gdf_spaces = select_and_visualize_layers(gdf)
                     gdf_pol = gpd.GeoSeries(polygonize(gdf_spaces.geometry))
                     gdf_pol = gpd.GeoDataFrame(gdf_pol, columns=['geometry'])
