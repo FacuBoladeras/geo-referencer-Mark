@@ -139,8 +139,10 @@ def process_properties(gdf_pol, gdf, file_name):
 
     if gdf_points.empty:
         gdf_points = gdf[gdf['Layer'] == '003-Room_number_text']
-    elif gdf_points.empty:
-        gdf_points = gdf[gdf['Layer'] == 'Text']
+
+    if gdf_points.empty:
+        # get only the points
+        gdf_points = gdf[gdf['geometry'].geom_type == 'Point']
 
 
     text_prop = []
