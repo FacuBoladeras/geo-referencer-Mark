@@ -133,22 +133,23 @@ def dwg_to_gdf(file):
 
 def process_properties(gdf_pol, gdf, file_name):
     list_index = 0
-    gdf_points = gdf[gdf['Layer'] == '71-spaces_data']
+    layer_attr_val = ['71-spaces_data', '003-Room_number_text','Workplaces']
+    gdf_points = gdf[gdf['Layer'].isin(layer_attr_val)]
+
     if not gdf_points.empty:
-        list_index = 1
+        if gdf_points['Layer'].iloc[0] == '71-spaces_data':
+            list_index = 1
 
-    if gdf_points.empty:
-        gdf_points = gdf[gdf['Layer'] == '003-Room_number_text']
-
-    if gdf_points.empty:
-        # get only the points
-        gdf_points = gdf[gdf['geometry'].geom_type == 'Point']
+ 
+        gdf_points = gdf_points[gdf_points['geometry'].geom_type == 'Point']
 
 
     text_prop = []
     for i, item in gdf_pol.iterrows():
         gdf_inter = gdf_points.overlay(gdf_pol.loc[[i]], how='intersection')
         prop = gdf_inter['Text'].to_list()
+        if prop and len(prop[0].split('\n')) > 1:
+            prop = [prop[0].split('\n')[0]]
         text_prop.append(prop)
 
     gdf_pol['prop'] = text_prop
@@ -163,7 +164,7 @@ def process_properties(gdf_pol, gdf, file_name):
             spaceid = None
         feat['id'] = spaceid
         feat['properties'] = {
-            "Layer": "70-spaces",
+            "Layer": gdf['Layer'].iloc[i],
             "type": type_prop,
             "custom": custom_prop,
             "PaperSpace": None,
@@ -177,6 +178,10 @@ def process_properties(gdf_pol, gdf, file_name):
     geojson = json.dumps(featcoll)
     return geojson, file_name[0:-4] + '.geojson'
 
+
+# list with possible values for 'layer' column
+
+layer_val = ['70-spaces', 'A-ROOMS','A-Areas','Workplaces','_MKD_ROOM']
 
 def mainFiles():
     st.set_option('deprecation.showPyplotGlobalUse', False)
@@ -202,7 +207,8 @@ For those files that do not contain the geometries in the default layer, it is p
                 elif file.name.endswith('.dwg') or file.name.endswith('.DWG'):
                     gdf, file_name = dwg_to_gdf(file)
 
-                gdf_spaces = gdf[gdf['Layer'] == '70-spaces']
+                gdf_spaces = gdf[gdf['Layer'].isin(layer_val)]
+
                 if not gdf_spaces.empty:
                     gdf_pol = gpd.GeoSeries(polygonize(gdf_spaces.geometry))
                     gdf_pol = gpd.GeoDataFrame(gdf_pol, columns=['geometry'])
