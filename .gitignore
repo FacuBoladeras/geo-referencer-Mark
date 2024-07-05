@@ -2,5 +2,6 @@ output.dxf
 temp.dwg
 .env
 .DS_Store
-.venv
+.venv/*
 *.pyc
+
