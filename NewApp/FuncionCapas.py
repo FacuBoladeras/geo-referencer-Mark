@@ -6,9 +6,10 @@ from PIL import Image
 from shapely.ops import polygonize
 import json
 
-pre_selected_layers = ['70-spaces', 'A-ROOMS','A-Areas','A-AREAS','Workplaces','_MKD_ROOM']
+floor_layers = ['70-spaces', 'A-ROOMS','A-Areas','A-AREAS','_MKD_ROOM']
+work_layers = ['Workplaces']
 
-def select_and_visualize_layers(gdf, key_suffix=""):
+def select_and_visualize_layers(gdf):
     # Obtener las capas únicas del GeoDataFrame
     layers = gdf['Layer'].unique()
     
@@ -16,13 +17,19 @@ def select_and_visualize_layers(gdf, key_suffix=""):
     # selected_layer = st.selectbox('Select layer:', layers, key=f"selectbox_{key_suffix}")
 
     # add multi layer selection
-    def_select = [layer for layer in layers if layer in pre_selected_layers]
+    def_select = [layer for layer in layers if layer in floor_layers]
 
-    selected_layer = st.multiselect('Select layers:', layers, default=def_select ,key=f"multiselect_{key_suffix}")
+    floor_selected_layer = st.multiselect('Select Floor layers:', layers, default=def_select ,key=f"multiselect_floor")
 
+    work_selected_layer = st.multiselect('Select Workplaces layers:', layers, default=[layer for layer in layers if layer in work_layers], key=f"multiselect_work")
+
+    selected_layer = floor_selected_layer + work_selected_layer
+    
     # Filtrar el GeoDataFrame por la capa seleccionada
     filtered_gdf = gdf[gdf['Layer'].isin(selected_layer)]
+    floor_selected_layer = gdf[gdf['Layer'].isin(floor_selected_layer)]
+    work_selected_layer = gdf[gdf['Layer'].isin(work_selected_layer)]
 
-    return filtered_gdf
+    return filtered_gdf , floor_selected_layer , work_selected_layer
 
 

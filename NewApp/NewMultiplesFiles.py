@@ -135,31 +135,55 @@ def dwg_to_gdf(file):
                 
                 return gdf, file_name
 
-def process_properties(gdf_pol, gdf, file_name):
+def process_properties(gdf, floor_pol, work_pol, file_name):
     list_index = 0
-    layer_attr_val = ['71-spaces_data', '003-Room_number_text','Workplaces']
-    gdf_points = gdf[gdf['Layer'].isin(layer_attr_val)]
+    floor_attr_val = ['71-spaces_data', '003-Room_number_text']
+    work_attr_val = ['Workplaces']
 
-    if not gdf_points.empty:
-        if gdf_points['Layer'].iloc[0] == '71-spaces_data':
+    if not gdf.empty:
+        if gdf['Layer'].iloc[0] == '71-spaces_data':
             list_index = 1
-
- 
-        gdf_points = gdf_points[gdf_points['geometry'].geom_type == 'Point']
-
+        gdf_points = gdf[gdf['geometry'].geom_type == 'Point']
 
     text_prop = []
-    for i, item in gdf_pol.iterrows():
-        gdf_inter = gdf_points.overlay(gdf_pol.loc[[i]], how='intersection')
-        prop = gdf_inter['Text'].to_list()
-        if prop and len(prop[0].split('\n')) > 1:
-            prop = [prop[0].split('\n')[0]]
+    for i, item in floor_pol.iterrows():
+        gdf_inter = gdf_points.overlay(floor_pol.loc[[i]], how='intersection')
+        if gdf_inter.empty:
+            prop = None
+        else:
+            prop = gdf_inter['Text'].to_list()
+            if prop and len(prop[0].split('\n')) > 1:
+                prop = [prop[0].split('\n')[0]]
         text_prop.append(prop)
 
-    gdf_pol['prop'] = text_prop
-    featcoll = gdf_pol.__geo_interface__
+    floor_pol['prop'] = text_prop
+    floor_pol['type_prop'] = "area.space"
+    floor_pol['Layer'] = 'spaces'
 
-    type_prop = "area.space"
+    #  get Workplaces points and properties
+
+    text_prop = []
+    for i, item in work_pol.iterrows():
+        # remove 'Text' column from work_selected_layer if exists to avoid conflicts
+        if 'Text' in work_pol.columns:
+            work_pol.drop(columns=['Text'], inplace=True)
+        gdf_inter = gdf_points.overlay(work_pol.loc[[i]], how='intersection')
+        if gdf_inter.empty:
+            prop = None
+        else:
+            prop = gdf_inter['Text'].to_list()
+            if prop and len(prop[0].split('\n')) > 1:
+                prop = [prop[0].split('\n')[0]]
+        text_prop.append(prop)
+    
+    work_pol['prop'] = text_prop
+    work_pol['type_prop'] = "area.workplace"
+    work_pol['Layer'] = 'workplaces'
+
+    gdf = pd.concat([floor_pol, work_pol], ignore_index=True)
+    featcoll = gdf.__geo_interface__
+
+    
     custom_prop = "[object Object]"
     for i, feat in enumerate(featcoll['features']):
         try:
@@ -169,7 +193,7 @@ def process_properties(gdf_pol, gdf, file_name):
         feat['id'] = spaceid
         feat['properties'] = {
             "Layer": gdf['Layer'].iloc[i],
-            "type": type_prop,
+            "type": gdf['type_prop'].iloc[i],
             "custom": custom_prop,
             "PaperSpace": None,
             "SubClasses": "AcDbEntity:AcDbPolyline",
@@ -218,9 +242,15 @@ For those files that do not contain the geometries in the default layer, it is p
                 #     gdf_pol = gpd.GeoDataFrame(gdf_pol, columns=['geometry'])
                 # else:
                 st.warning("Select area layers...")
-                gdf_spaces = select_and_visualize_layers(gdf)
+                gdf_spaces , floor_selected_layer , work_selected_layer = select_and_visualize_layers(gdf)
                 gdf_pol = gpd.GeoSeries(polygonize(gdf_spaces.geometry))
                 gdf_pol = gpd.GeoDataFrame(gdf_pol, columns=['geometry'])
+
+                floor_pol = gpd.GeoSeries(polygonize(floor_selected_layer.geometry))
+                floor_pol = gpd.GeoDataFrame(floor_pol, columns=['geometry'])
+
+                work_pol = gpd.GeoSeries(polygonize(work_selected_layer.geometry))
+                work_pol = gpd.GeoDataFrame(work_pol, columns=['geometry'])
 
                 sns.set_theme(style="whitegrid")
                 fig, ax = plt.subplots()
@@ -231,7 +261,7 @@ For those files that do not contain the geometries in the default layer, it is p
                 plt.axis('off')
                 st.pyplot(fig)
 
-                geojson, geojson_filename = process_properties(gdf_pol, gdf, file_name)
+                geojson, geojson_filename = process_properties(gdf, floor_pol,work_pol, file_name)
 
                 download_button_key = f"download_button_{i}"
                 st.download_button('Download GeoJson', geojson, mime='text/json', file_name=geojson_filename, key=download_button_key, type="primary")
