@@ -140,53 +140,62 @@ def process_properties(gdf, floor_layer, work_layer, file_name):
     floor_attr_val = ['71-spaces_data', '003-Room_number_text']
     work_attr_val = ['Workplaces']
 
-    gdf_floor = gdf[gdf['Layer'].isin(floor_attr_val)]
-    if not gdf_floor.empty:
-        if gdf_floor['Layer'].iloc[0] == '71-spaces_data':
-            list_index = 1
-        gdf_points = gdf_floor[gdf_floor['geometry'].geom_type == 'Point']
-
     floor_pol = gpd.GeoSeries(polygonize(floor_layer.geometry))
     floor_pol = gpd.GeoDataFrame(floor_pol, columns=['geometry'])
 
     work_pol = gpd.GeoSeries(polygonize(work_layer.geometry))
     work_pol = gpd.GeoDataFrame(work_pol, columns=['geometry'])
-        
-    text_prop = []
-    for i, item in floor_pol.iterrows():
-        gdf_inter = gdf_points.overlay(floor_pol.loc[[i]], how='intersection')
-        if gdf_inter.empty:
-            prop = None
-        else:
-            prop = gdf_inter['Text'].to_list()
-            if prop and len(prop[0].split('\n')) > 1:
-                prop = [prop[0].split('\n')[0]]
-        text_prop.append(prop)
 
-    floor_pol['prop'] = text_prop
+    # add selection tool 
+    layers = list(gdf['Layer'].unique())
+    layers.insert(0, None)
+    selected_label_floor = st.selectbox('Select layer with floor labels:', layers, index = 0, key=f"select_label_floor")
+    selected_label_work = st.selectbox('Select layer with workplace labels:', layers, index = 0, key=f"select_label_work")
+
+    # get Floor spaces points and properties
+    if selected_label_floor:
+        gdf_floor = gdf[gdf['Layer'] == selected_label_floor]
+        if not gdf_floor.empty:
+            if gdf_floor['Layer'].iloc[0] == '71-spaces_data':
+                list_index = 1
+        gdf_points = gdf_floor[gdf_floor['geometry'].geom_type == 'Point']
+        if not gdf_points.empty:
+            text_prop = []
+            for i, item in floor_pol.iterrows():
+                gdf_inter = gdf_points.overlay(floor_pol.loc[[i]], how='intersection')
+                if gdf_inter.empty:
+                    prop = None
+                else:
+                    prop = gdf_inter['Text'].to_list()
+                    if prop and len(prop[0].split('\n')) > 1:
+                        prop = [prop[0].split('\n')[0]]
+                text_prop.append(prop)
+            floor_pol['prop'] = text_prop
+
     floor_pol['type_prop'] = "area.space"
     floor_pol['Layer'] = 'spaces'
 
     #  get Workplaces points and properties
-    gdf_work = gdf[gdf['Layer'].isin(work_attr_val)]
-    if not gdf_work.empty:
-        gdf_points = gdf_work[gdf_work['geometry'].geom_type == 'Point']
-        
-    text_prop = []
-    for i, item in work_pol.iterrows():
-        # remove 'Text' column from work_selected_layer if exists to avoid conflicts
-        if 'Text' in work_pol.columns:
-            work_pol.drop(columns=['Text'], inplace=True)
-        gdf_inter = gdf_points.overlay(work_pol.loc[[i]], how='intersection')
-        if gdf_inter.empty:
-            prop = None
-        else:
-            prop = gdf_inter['Text'].to_list()
-            if prop and len(prop[0].split('\n')) > 1:
-                prop = [prop[0].split('\n')[0]]
-        text_prop.append(prop)
-    
-    work_pol['prop'] = text_prop
+    if selected_label_work:
+        gdf_work = gdf[gdf['Layer'] == selected_label_work]
+        if not gdf_work.empty:
+            gdf_points = gdf_work[gdf_work['geometry'].geom_type == 'Point']
+            if not gdf_points.empty:
+                text_prop = []
+                for i, item in work_pol.iterrows():
+                    # remove 'Text' column from work_selected_layer if exists to avoid conflicts
+                    if 'Text' in work_pol.columns:
+                        work_pol.drop(columns=['Text'], inplace=True)
+                    gdf_inter = gdf_points.overlay(work_pol.loc[[i]], how='intersection')
+                    if gdf_inter.empty:
+                        prop = None
+                    else:
+                        prop = gdf_inter['Text'].to_list()
+                        if prop and len(prop[0].split('\n')) > 1:
+                            prop = [prop[0].split('\n')[0]]
+                    text_prop.append(prop)
+                work_pol['prop'] = text_prop
+
     work_pol['type_prop'] = "area.workplace"
     work_pol['Layer'] = 'workplaces'
 
