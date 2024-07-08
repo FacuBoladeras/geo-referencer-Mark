@@ -207,16 +207,16 @@ For those files that do not contain the geometries in the default layer, it is p
                 elif file.name.endswith('.dwg') or file.name.endswith('.DWG'):
                     gdf, file_name = dwg_to_gdf(file)
 
-                gdf_spaces = gdf[gdf['Layer'].isin(layer_val)]
+                # gdf_spaces = gdf[gdf['Layer'].isin(layer_val)]
 
-                if not gdf_spaces.empty:
-                    gdf_pol = gpd.GeoSeries(polygonize(gdf_spaces.geometry))
-                    gdf_pol = gpd.GeoDataFrame(gdf_pol, columns=['geometry'])
-                else:
-                    st.warning("Select an area layer...")
-                    gdf_spaces = select_and_visualize_layers(gdf)
-                    gdf_pol = gpd.GeoSeries(polygonize(gdf_spaces.geometry))
-                    gdf_pol = gpd.GeoDataFrame(gdf_pol, columns=['geometry'])
+                # if not gdf_spaces.empty:
+                #     gdf_pol = gpd.GeoSeries(polygonize(gdf_spaces.geometry))
+                #     gdf_pol = gpd.GeoDataFrame(gdf_pol, columns=['geometry'])
+                # else:
+                st.warning("Select an area layer...")
+                gdf_spaces = select_and_visualize_layers(gdf)
+                gdf_pol = gpd.GeoSeries(polygonize(gdf_spaces.geometry))
+                gdf_pol = gpd.GeoDataFrame(gdf_pol, columns=['geometry'])
 
                 sns.set_theme(style="whitegrid")
                 fig, ax = plt.subplots()
