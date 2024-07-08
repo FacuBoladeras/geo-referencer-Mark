@@ -20,6 +20,10 @@ temp_dir = tempfile.gettempdir()
 dotenv.load_dotenv()
 
 api_key = os.getenv('API_KEY')
+
+if api_key is None:
+    raise ValueError("API_KEY is not set")
+
 cloudconvert.configure(api_key=api_key, sandbox=False)
 
 def extract_properties(gdf):

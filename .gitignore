@@ -1,6 +1,6 @@
 output.dxf
 temp.dwg
-.env/*
+.env
 .DS_Store
 *.pyc
-
+.venv/*
