@@ -135,16 +135,23 @@ def dwg_to_gdf(file):
                 
                 return gdf, file_name
 
-def process_properties(gdf, floor_pol, work_pol, file_name):
+def process_properties(gdf, floor_layer, work_layer, file_name):
     list_index = 0
     floor_attr_val = ['71-spaces_data', '003-Room_number_text']
     work_attr_val = ['Workplaces']
 
-    if not gdf.empty:
-        if gdf['Layer'].iloc[0] == '71-spaces_data':
+    gdf_floor = gdf[gdf['Layer'].isin(floor_attr_val)]
+    if not gdf_floor.empty:
+        if gdf_floor['Layer'].iloc[0] == '71-spaces_data':
             list_index = 1
-        gdf_points = gdf[gdf['geometry'].geom_type == 'Point']
+        gdf_points = gdf_floor[gdf_floor['geometry'].geom_type == 'Point']
 
+    floor_pol = gpd.GeoSeries(polygonize(floor_layer.geometry))
+    floor_pol = gpd.GeoDataFrame(floor_pol, columns=['geometry'])
+
+    work_pol = gpd.GeoSeries(polygonize(work_layer.geometry))
+    work_pol = gpd.GeoDataFrame(work_pol, columns=['geometry'])
+        
     text_prop = []
     for i, item in floor_pol.iterrows():
         gdf_inter = gdf_points.overlay(floor_pol.loc[[i]], how='intersection')
@@ -161,7 +168,10 @@ def process_properties(gdf, floor_pol, work_pol, file_name):
     floor_pol['Layer'] = 'spaces'
 
     #  get Workplaces points and properties
-
+    gdf_work = gdf[gdf['Layer'].isin(work_attr_val)]
+    if not gdf_work.empty:
+        gdf_points = gdf_work[gdf_work['geometry'].geom_type == 'Point']
+        
     text_prop = []
     for i, item in work_pol.iterrows():
         # remove 'Text' column from work_selected_layer if exists to avoid conflicts
@@ -235,22 +245,10 @@ For those files that do not contain the geometries in the default layer, it is p
                 elif file.name.endswith('.dwg') or file.name.endswith('.DWG'):
                     gdf, file_name = dwg_to_gdf(file)
 
-                # gdf_spaces = gdf[gdf['Layer'].isin(layer_val)]
-
-                # if not gdf_spaces.empty:
-                #     gdf_pol = gpd.GeoSeries(polygonize(gdf_spaces.geometry))
-                #     gdf_pol = gpd.GeoDataFrame(gdf_pol, columns=['geometry'])
-                # else:
                 st.warning("Select area layers...")
                 gdf_spaces , floor_selected_layer , work_selected_layer = select_and_visualize_layers(gdf)
                 gdf_pol = gpd.GeoSeries(polygonize(gdf_spaces.geometry))
                 gdf_pol = gpd.GeoDataFrame(gdf_pol, columns=['geometry'])
-
-                floor_pol = gpd.GeoSeries(polygonize(floor_selected_layer.geometry))
-                floor_pol = gpd.GeoDataFrame(floor_pol, columns=['geometry'])
-
-                work_pol = gpd.GeoSeries(polygonize(work_selected_layer.geometry))
-                work_pol = gpd.GeoDataFrame(work_pol, columns=['geometry'])
 
                 sns.set_theme(style="whitegrid")
                 fig, ax = plt.subplots()
@@ -261,7 +259,7 @@ For those files that do not contain the geometries in the default layer, it is p
                 plt.axis('off')
                 st.pyplot(fig)
 
-                geojson, geojson_filename = process_properties(gdf, floor_pol,work_pol, file_name)
+                geojson, geojson_filename = process_properties(gdf, floor_selected_layer, work_selected_layer, file_name)
 
                 download_button_key = f"download_button_{i}"
                 st.download_button('Download GeoJson', geojson, mime='text/json', file_name=geojson_filename, key=download_button_key, type="primary")
