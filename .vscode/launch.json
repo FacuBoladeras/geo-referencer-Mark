@@ -1,17 +1,21 @@
 {
     "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Streamlit",
-            "type": "python",
-            "request": "launch",
-            "program": "~/Escritorio/geo-referencer-Mark/Pages/Geo_reference.py",            
-            "console": "integratedTerminal",
-            "justMyCode": true,
-            "args": ["run", "Geo_reference.py"],
-            "env": {
-                "STREAMLIT_SERVER_PORT": "8501" // Puerto en el que se ejecuta el servidor de Streamlit
-            }
-        }
+    "configurations": [{
+         "name": "Python: Streamlit",
+         "type": "debugpy",
+         "request": "launch",
+         "module": "streamlit",
+         "env": {
+             "STREAMLIT_APP": "main.py",
+             "STREAMLIT_ENV": "development",
+             "AWS_PROFILE": "Moon&Mars",
+             "PYTHONPATH": "${workspaceRoot}/src",
+         },
+         "args": [
+             "run",
+             "/Users/fer/Job/MARC/geo-referencer-Mark/main.py"
+         ],
+         "jinja": true
+     }
     ]
-}
+ }

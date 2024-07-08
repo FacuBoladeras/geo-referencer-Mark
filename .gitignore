@@ -1,0 +1,6 @@
+output.dxf
+temp.dwg
+.env/*
+.DS_Store
+*.pyc
+
