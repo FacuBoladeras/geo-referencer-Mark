@@ -135,9 +135,10 @@ def dwg_to_gdf(file):
                 
                 return gdf, file_name
 
-def process_properties(gdf, floor_layer, work_layer, file_name):
+def process_properties(gdf, floor_layer, work_layer,room_layer, file_name):
     list_index = 0
-    floor_attr_val = ['71-spaces_data', '003-Room_number_text']
+    floor_attr_val = ['71-spaces_data', '70-spaces_text']
+    room_attr_val = ['003-Room_number_text']
     work_attr_val = ['Workplaces']
 
     floor_pol = gpd.GeoSeries(polygonize(floor_layer.geometry))
@@ -145,6 +146,9 @@ def process_properties(gdf, floor_layer, work_layer, file_name):
 
     work_pol = gpd.GeoSeries(polygonize(work_layer.geometry))
     work_pol = gpd.GeoDataFrame(work_pol, columns=['geometry'])
+
+    room_pol = gpd.GeoSeries(polygonize(room_layer.geometry))
+    room_pol = gpd.GeoDataFrame(room_pol, columns=['geometry'])
 
     # add selection tool 
     layers = list(gdf['Layer'].unique())
@@ -164,7 +168,14 @@ def process_properties(gdf, floor_layer, work_layer, file_name):
     else:
         work_index = 0
 
+    if any(attr in layers for attr in room_attr_val):
+        list_index = [layers.index(attr) for attr in room_attr_val if attr in layers]
+        room_index = list_index[0]
+    else:
+        room_index = 0
+
     selected_label_floor = st.selectbox('Select layer with floor labels:', layers, index = floor_index, key=f"select_label_floor")
+    selected_label_room = st.selectbox('Select layer with room labels:', layers, index = room_index, key=f"select_label_room")
     selected_label_work = st.selectbox('Select layer with workplace labels:', layers, index = work_index, key=f"select_label_work")
 
     # get Floor spaces points and properties
@@ -190,6 +201,28 @@ def process_properties(gdf, floor_layer, work_layer, file_name):
     floor_pol['type_prop'] = "area.space"
     floor_pol['Layer'] = 'spaces'
 
+    # room 
+    if selected_label_room:
+        gdf_room = gdf[gdf['Layer'] == selected_label_room]
+        if not gdf_room.empty:
+            gdf_points = gdf_room[gdf_room['geometry'].geom_type == 'Point']
+            if not gdf_points.empty:
+                text_prop = []
+                for i, item in room_pol.iterrows():
+                    gdf_inter = gdf_points.overlay(room_pol.loc[[i]], how='intersection')
+                    if gdf_inter.empty:
+                        prop = None
+                    else:
+                        prop = gdf_inter['Text'].to_list()
+                        if prop and len(prop[0].split('\n')) > 1:
+                            prop = [prop[0].split('\n')[0]]
+                    text_prop.append(prop)
+                room_pol['prop'] = text_prop
+
+    room_pol['type_prop'] = "area.room"
+    room_pol['Layer'] = 'rooms'
+
+
     #  get Workplaces points and properties
     if selected_label_work:
         gdf_work = gdf[gdf['Layer'] == selected_label_work]
@@ -214,7 +247,7 @@ def process_properties(gdf, floor_layer, work_layer, file_name):
     work_pol['type_prop'] = "area.workplace"
     work_pol['Layer'] = 'workplaces'
 
-    gdf = pd.concat([floor_pol, work_pol], ignore_index=True)
+    gdf = pd.concat([floor_pol, room_pol , work_pol], ignore_index=True)
     featcoll = gdf.__geo_interface__
 
     
@@ -270,7 +303,7 @@ For those files that do not contain the geometries in the default layer, it is p
                     gdf, file_name = dwg_to_gdf(file)
 
                 st.warning("Select area layers...")
-                gdf_spaces , floor_selected_layer , work_selected_layer = select_and_visualize_layers(gdf)
+                gdf_spaces , floor_selected_layer , work_selected_layer, room_selected_layer = select_and_visualize_layers(gdf)
                 gdf_pol = gpd.GeoSeries(polygonize(gdf_spaces.geometry))
                 gdf_pol = gpd.GeoDataFrame(gdf_pol, columns=['geometry'])
 
@@ -283,7 +316,7 @@ For those files that do not contain the geometries in the default layer, it is p
                 plt.axis('off')
                 st.pyplot(fig)
 
-                geojson, geojson_filename = process_properties(gdf, floor_selected_layer, work_selected_layer, file_name)
+                geojson, geojson_filename = process_properties(gdf, floor_selected_layer, work_selected_layer, room_selected_layer, file_name)
 
                 download_button_key = f"download_button_{i}"
                 st.download_button('Download GeoJson', geojson, mime='text/json', file_name=geojson_filename, key=download_button_key, type="primary")
