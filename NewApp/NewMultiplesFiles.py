@@ -149,8 +149,23 @@ def process_properties(gdf, floor_layer, work_layer, file_name):
     # add selection tool 
     layers = list(gdf['Layer'].unique())
     layers.insert(0, None)
-    selected_label_floor = st.selectbox('Select layer with floor labels:', layers, index = 0, key=f"select_label_floor")
-    selected_label_work = st.selectbox('Select layer with workplace labels:', layers, index = 0, key=f"select_label_work")
+    
+    # if any of floor_attr_val is in layers, get index of the first element
+
+    if any(attr in layers for attr in floor_attr_val):
+        list_index = [layers.index(attr) for attr in floor_attr_val if attr in layers]
+        floor_index = list_index[0]
+    else:
+        floor_index = 0
+    
+    if any(attr in layers for attr in work_attr_val):
+        list_index = [layers.index(attr) for attr in work_attr_val if attr in layers]
+        work_index = list_index[0]
+    else:
+        work_index = 0
+
+    selected_label_floor = st.selectbox('Select layer with floor labels:', layers, index = floor_index, key=f"select_label_floor")
+    selected_label_work = st.selectbox('Select layer with workplace labels:', layers, index = work_index, key=f"select_label_work")
 
     # get Floor spaces points and properties
     if selected_label_floor:
