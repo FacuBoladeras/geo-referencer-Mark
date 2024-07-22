@@ -157,20 +157,20 @@ def process_properties(gdf, floor_layer, work_layer,room_layer, file_name):
     # if any of floor_attr_val is in layers, get index of the first element
 
     if any(attr in layers for attr in floor_attr_val):
-        list_index = [layers.index(attr) for attr in floor_attr_val if attr in layers]
-        floor_index = list_index[0]
+        f_list_index = [layers.index(attr) for attr in floor_attr_val if attr in layers]
+        floor_index = f_list_index[0]
     else:
         floor_index = 0
     
     if any(attr in layers for attr in work_attr_val):
-        list_index = [layers.index(attr) for attr in work_attr_val if attr in layers]
-        work_index = list_index[0]
+        w_list_index = [layers.index(attr) for attr in work_attr_val if attr in layers]
+        work_index = w_list_index[0]
     else:
         work_index = 0
 
     if any(attr in layers for attr in room_attr_val):
-        list_index = [layers.index(attr) for attr in room_attr_val if attr in layers]
-        room_index = list_index[0]
+        r_list_index = [layers.index(attr) for attr in room_attr_val if attr in layers]
+        room_index = r_list_index[0]
     else:
         room_index = 0
 
@@ -184,19 +184,19 @@ def process_properties(gdf, floor_layer, work_layer,room_layer, file_name):
         if not gdf_floor.empty:
             if gdf_floor['Layer'].iloc[0] == '71-spaces_data':
                 list_index = 1
-        gdf_points = gdf_floor[gdf_floor['geometry'].geom_type == 'Point']
-        if not gdf_points.empty:
-            text_prop = []
-            for i, item in floor_pol.iterrows():
-                gdf_inter = gdf_points.overlay(floor_pol.loc[[i]], how='intersection')
-                if gdf_inter.empty:
-                    prop = None
-                else:
-                    prop = gdf_inter['Text'].to_list()
-                    if prop and len(prop[0].split('\n')) > 1:
-                        prop = [prop[0].split('\n')[0]]
-                text_prop.append(prop)
-            floor_pol['prop'] = text_prop
+            gdf_points = gdf_floor[gdf_floor['geometry'].geom_type == 'Point']
+            if not gdf_points.empty:
+                text_prop = []
+                for i, item in floor_pol.iterrows():
+                    gdf_inter = gdf_points.overlay(floor_pol.loc[[i]], how='intersection')
+                    if gdf_inter.empty:
+                        prop = None
+                    else:
+                        prop = gdf_inter['Text'].to_list()
+                        if prop and len(prop[0].split('\n')) > 1:
+                            prop = [prop[0].split('\n')[0]]
+                    text_prop.append(prop)
+                floor_pol['prop'] = text_prop
 
     floor_pol['type_prop'] = "area.space"
     floor_pol['Layer'] = 'spaces'
@@ -205,6 +205,8 @@ def process_properties(gdf, floor_layer, work_layer,room_layer, file_name):
     if selected_label_room:
         gdf_room = gdf[gdf['Layer'] == selected_label_room]
         if not gdf_room.empty:
+            if gdf_room['Layer'].iloc[0] == '71-spaces_data':
+                list_index = 1
             gdf_points = gdf_room[gdf_room['geometry'].geom_type == 'Point']
             if not gdf_points.empty:
                 text_prop = []
@@ -259,6 +261,7 @@ def process_properties(gdf, floor_layer, work_layer,room_layer, file_name):
             spaceid = None
         feat['id'] = spaceid
         feat['properties'] = {
+            "id": spaceid,
             "Layer": gdf['Layer'].iloc[i],
             "type": gdf['type_prop'].iloc[i],
             "custom": custom_prop,
