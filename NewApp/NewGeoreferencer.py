@@ -119,6 +119,8 @@ def handle_accept(st_data):
         y_slide = centroid.y - centroid_plan.y
         gdf_plan.geometry = gdf_plan.geometry.apply(lambda x: translate(x, xoff=x_slide, yoff=y_slide))
         plan_feat = gdf_plan.__geo_interface__
+        for feat in plan_feat['features']:
+            feat['id'] = feat['properties']['id']
         feats.append(plan_feat)
 
         # Store each GeoJSON separately

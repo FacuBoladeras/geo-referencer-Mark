@@ -190,7 +190,7 @@ def process_properties(gdf, floor_layer, work_layer,room_layer, file_name):
                 for i, item in floor_pol.iterrows():
                     gdf_inter = gdf_points.overlay(floor_pol.loc[[i]], how='intersection')
                     if gdf_inter.empty:
-                        prop = None
+                        prop = ' '
                     else:
                         prop = gdf_inter['Text'].to_list()
                         if prop and len(prop[0].split('\n')) > 1:
@@ -221,7 +221,7 @@ def process_properties(gdf, floor_layer, work_layer,room_layer, file_name):
                     text_prop.append(prop)
                 room_pol['prop'] = text_prop
 
-    room_pol['type_prop'] = "area.room"
+    room_pol['type_prop'] = "area.space"
     room_pol['Layer'] = 'rooms'
 
 
@@ -258,7 +258,7 @@ def process_properties(gdf, floor_layer, work_layer,room_layer, file_name):
         try:
             spaceid = feat['properties']['prop'][list_index]
         except:
-            spaceid = None
+            spaceid = ' '
         feat['id'] = spaceid
         feat['properties'] = {
             "id": spaceid,
