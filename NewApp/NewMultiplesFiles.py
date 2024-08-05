@@ -256,7 +256,7 @@ def process_properties(gdf, floor_layer, work_layer,room_layer, file_name):
     custom_prop = "[object Object]"
     for i, feat in enumerate(featcoll['features']):
         try:
-            spaceid = feat['properties']['prop'][list_index]
+            spaceid = str(feat['properties']['prop'][list_index])
         except:
             spaceid = ' '
         feat['id'] = spaceid
