@@ -5,6 +5,7 @@ import json
 import pandas as pd
 import geopandas as gpd
 from shapely.ops import polygonize
+from shapely.geometry import shape, Polygon, LineString, Point
 import os
 from fiona.io import MemoryFile
 import matplotlib.pyplot as plt
@@ -39,23 +40,39 @@ def dxf_to_gdf(file):
     bytes_data = file.getvalue()
     with MemoryFile(bytes_data) as memfile:
         with memfile.open() as src:
-            df1 = gpd.GeoDataFrame(src)
+            # Read features from src
+            features = list(src)
             
             def is_valid(geom):
                 try:
+                    geom = shape(geom)  # Convert Fiona geometry to Shapely geometry
                     geom_type = geom.geom_type
-                    return geom_type in ['Polygon', 'LineString', 'Point']
-                except AttributeError:
+                    if geom_type == 'Polygon':
+                        return len(geom.exterior.coords) >= 4
+                    elif geom_type == 'LineString':
+                        return len(geom.coords) >= 2
+                    elif geom_type == 'Point':
+                        return True
+                    else:
+                        return False
+                except Exception as e:
+                    print(e)
                     return False
+
             
-            df1['isvalid'] = df1['geometry'].apply(lambda x: is_valid(x))
-            df1 = df1[df1['isvalid']]
+            # Filter valid features
+            valid_features = [feature for feature in features if is_valid(feature['geometry'])]
             
-            gdf = gpd.GeoDataFrame.from_features(df1)
-            properties_df = extract_properties(gdf)
             
-            gdf = pd.concat([gdf, properties_df], axis=1)            
-            gdf.drop(columns=['properties'], inplace=True)
+            gdf = gpd.GeoDataFrame.from_features(valid_features)
+            try:
+                properties_df = extract_properties(gdf)
+                
+                gdf = pd.concat([gdf, properties_df], axis=1)            
+                gdf.drop(columns=['properties'], inplace=True)
+            except Exception as e:
+                print(e)
+            
             
             return gdf, file_name
         
@@ -174,9 +191,9 @@ def process_properties(gdf, floor_layer, work_layer,room_layer, file_name):
     else:
         room_index = 0
 
-    selected_label_floor = st.selectbox('Select layer with floor labels:', layers, index = floor_index, key=f"select_label_floor")
-    selected_label_room = st.selectbox('Select layer with room labels:', layers, index = room_index, key=f"select_label_room")
-    selected_label_work = st.selectbox('Select layer with workplace labels:', layers, index = work_index, key=f"select_label_work")
+    selected_label_floor = st.selectbox('Select layer with floor labels:', layers, index = floor_index)
+    selected_label_room = st.selectbox('Select layer with room labels:', layers, index = room_index)
+    selected_label_work = st.selectbox('Select layer with workplace labels:', layers, index = work_index)
 
     # get Floor spaces points and properties
     if selected_label_floor:

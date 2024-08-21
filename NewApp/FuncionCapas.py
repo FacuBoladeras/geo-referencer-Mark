@@ -17,12 +17,12 @@ def select_and_visualize_layers(gdf):
     # add multi layer selection
     def_select = [layer for layer in layers if layer in floor_layers]
 
-    floor_selected_layer = st.multiselect('Select Floor layers:', layers, default=def_select ,key=f"multiselect_floor")
+    floor_selected_layer = st.multiselect('Select Floor layers:', layers, default=def_select)
 
     def_select = [layer for layer in layers if layer in room_layers]
-    room_selected_layer = st.multiselect('Select Room layers:', layers, default=def_select ,key=f"multiselect_room")
+    room_selected_layer = st.multiselect('Select Room layers:', layers, default=def_select)
 
-    work_selected_layer = st.multiselect('Select Workplaces layers:', layers, default=[layer for layer in layers if layer in work_layers], key=f"multiselect_work")
+    work_selected_layer = st.multiselect('Select Workplaces layers:', layers, default=[layer for layer in layers if layer in work_layers])
 
     selected_layer = floor_selected_layer + work_selected_layer + room_selected_layer
 
