@@ -133,22 +133,39 @@ def dwg_to_gdf(file):
         content = f.read()
         with MemoryFile(content) as memfile:
             with memfile.open() as src:
-                df1 = gpd.GeoDataFrame(src)
+                # Read features from src
+                features = list(src)
+                
                 def is_valid(geom):
                     try:
+                        geom = shape(geom)  # Convert Fiona geometry to Shapely geometry
                         geom_type = geom.geom_type
-                        return geom_type in ['Polygon', 'LineString', 'Point']
-                    except AttributeError:
+                        if geom_type == 'Polygon':
+                            return len(geom.exterior.coords) >= 4
+                        elif geom_type == 'LineString':
+                            return len(geom.coords) >= 2
+                        elif geom_type == 'Point':
+                            return True
+                        else:
+                            return False
+                    except Exception as e:
+                        print(e)
                         return False
+
                 
-                df1['isvalid'] = df1['geometry'].apply(lambda x: is_valid(x))
-                df1 = df1[df1['isvalid']]
+                # Filter valid features
+                valid_features = [feature for feature in features if is_valid(feature['geometry'])]
                 
-                gdf = gpd.GeoDataFrame.from_features(df1)
-                properties_df = extract_properties(gdf)
                 
-                gdf = pd.concat([gdf, properties_df], axis=1)            
-                gdf.drop(columns=['properties'], inplace=True)
+                gdf = gpd.GeoDataFrame.from_features(valid_features)
+                try:
+                    properties_df = extract_properties(gdf)
+                    
+                    gdf = pd.concat([gdf, properties_df], axis=1)            
+                    gdf.drop(columns=['properties'], inplace=True)
+                except Exception as e:
+                    print(e)
+                
                 
                 return gdf, file_name
 
